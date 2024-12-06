@@ -35,6 +35,9 @@ typedef vector<vd> vvd;
 const int INF = 0x3f3f3f3f;
 const ll LINF = 0x3f3f3f3f3f3f3f3fll;
 
+int n, m;
+
+inline int oob(int x, int y) { return x < 0 or x >= n or y < 0 or y >= m; }
 inline pair<int, char> get_guard_col_and_direction(const string &st) {
   int col = -1;
   char dir = '$';
@@ -59,215 +62,123 @@ inline pair<int, char> get_guard_col_and_direction(const string &st) {
   return mp(col, dir);
 }
 
-int n, m;
+#define UP '^'
+#define RIGHT '>'
+#define DOWN 'v'
+#define LEFT '<'
 
-inline int oob(int x, int y) { return x < 0 or x >= n or y < 0 or y >= m; }
+vector<string> v;
+ii pos;
+char dir;
+set<tuple<int, int, char>> cj;
 
-int get_ans(const vvi &cnt) {
-  int ans = 0;
-  for (auto &e1 : cnt)
-    for (auto &e2 : e1)
-      ans += e2;
-  return ans;
-}
+const int MAX = 1e3 + 10;
 
-inline void printv(const vvi &v) {
-  for (auto &e1 : v) {
-    for (auto &e2 : e1) {
-      cout << (char)e2 << " ";
+int upv[MAX][MAX];
+int downv[MAX][MAX];
+int leftv[MAX][MAX];
+int rightv[MAX][MAX];
+
+inline void printv() {
+  for (int i = 0; i < n; i++) {
+    for (int j = 0; j < m; j++) {
+      cout << rightv[i][j] << " ";
     }
     cout << endl;
   }
+  cout << "-----------------------\n";
 }
 
-inline void printmap(const vector<string> &vm) {
-  for (auto &fff : vm)
-    cout << fff << endl;
+bool has_cycle() {
+  memset(upv, 0, sizeof(upv));
+  memset(downv, 0, sizeof(upv));
+  memset(leftv, 0, sizeof(upv));
+  memset(rightv, 0, sizeof(upv));
+  while (true) {
+    if (oob(pos.f, pos.s))
+      return false;
+    if (v[pos.f][pos.s] != '#') {
+      if (dir == UP) {
+        if (upv[pos.f][pos.s] == 1)
+          return true;
+        upv[pos.f][pos.s] = 1;
+      }
+      if (dir == DOWN) {
+        if (downv[pos.f][pos.s] == 1)
+          return true;
+        downv[pos.f][pos.s] = 1;
+      }
+      if (dir == LEFT) {
+        if (leftv[pos.f][pos.s] == 1)
+          return true;
+        leftv[pos.f][pos.s] = 1;
+      }
+      if (dir == RIGHT) {
+        if (rightv[pos.f][pos.s] == 1)
+          return true;
+        rightv[pos.f][pos.s] = 1;
+      }
+    }
+
+    if (v[pos.f][pos.s] == '#') {
+      if (dir == UP) {
+        pos.f++;
+        dir = RIGHT;
+      } else if (dir == DOWN) {
+        pos.f--;
+        dir = LEFT;
+      } else if (dir == LEFT) {
+        pos.s++;
+        dir = UP;
+      } else if (dir == RIGHT) {
+        dir = DOWN;
+        pos.s--;
+      }
+    } else {
+
+      switch (dir) {
+      case UP:
+        pos.f--;
+        break;
+      case DOWN:
+        pos.f++;
+        break;
+      case LEFT:
+        pos.s--;
+        break;
+      case RIGHT:
+        pos.s++;
+        break;
+      }
+    }
+  }
 }
 
 int main() {
-  _ vector<string> v;
   string st;
-  ii pos;
-  char dir;
-  n = 0;
+  ii initial_pos;
   while (cin >> st) {
     v.pb(st);
     auto [col, d] = get_guard_col_and_direction(st);
     if (d != '$') {
-      pos = mp(n, col);
+      initial_pos = mp(n, col);
       dir = d;
     }
     n++;
   }
-  ii initial_pos = pos;
   m = sz(v[0]);
-  vvi cnt(n, vi(m));
-  set<ii> visited;
-  int shouldbreak = 0;
-  while (1) {
-    if (shouldbreak)
-      break;
-    switch (dir) {
-    case '^':
-      while (!oob(pos.f, pos.s) and v[pos.f][pos.s] != '#') {
-        cnt[pos.f][pos.s] = '^';
-        visited.insert(pos);
-        pos.f--;
-      }
-      if (oob(pos.f, pos.s)) {
-        shouldbreak = 1;
-      }
-      dir = '>';
-      pos.f++;
-      break;
-    case '>':
-      while (!oob(pos.f, pos.s) and v[pos.f][pos.s] != '#') {
-        cnt[pos.f][pos.s] = '>';
-
-        visited.insert(pos);
-        pos.s++;
-      }
-      if (oob(pos.f, pos.s)) {
-        shouldbreak = 1;
-      }
-      dir = 'v';
-      pos.s--;
-      break;
-    case 'v':
-      while (!oob(pos.f, pos.s) and v[pos.f][pos.s] != '#') {
-        cnt[pos.f][pos.s] = 'v';
-        visited.insert(pos);
-        pos.f++;
-      }
-      if (oob(pos.f, pos.s)) {
-        shouldbreak = 1;
-      }
-      dir = '<';
-      pos.f--;
-      break;
-    case '<':
-      while (!oob(pos.f, pos.s) and v[pos.f][pos.s] != '#') {
-        cnt[pos.f][pos.s] = '<';
-        visited.insert(pos);
-        pos.s--;
-      }
-      if (oob(pos.f, pos.s)) {
-        shouldbreak = 1;
-      }
-      pos.s++;
-      dir = '^';
-
-      break;
-    default:
-      cout << "should't be here" << endl;
-      exit(1);
-    }
-  }
-  vector<string> v2 = v;
   int ans = 0;
-  vector<ii> vis(all(visited));
   char initial_dir = dir;
-  for (int i = 0; i < sz(vis); i++) {
-    cnt = vvi(n, vi(m));
-    cnt[initial_pos.f][initial_pos.s] = initial_dir;
-    dir = initial_dir;
-    auto &[a, b] = vis[i];
-    dbg(a);
-    dbg(b);
-    if (a == initial_pos.f and b == initial_pos.s)
-      continue;
-    if (a != 16 or b != 6)
-      continue;
-    v2[a][b] = '#';
-    shouldbreak = 0;
-    pos = initial_pos;
-    while (1) {
-      printv(cnt);
-      if (shouldbreak)
-        break;
-      switch (dir) {
-      case '^':
-        while (!oob(pos.f, pos.s) and v2[pos.f][pos.s] != '#') {
-          if (!oob(pos.f - 1, pos.s) and v2[pos.f - 1][pos.s] == '#' and
-              cnt[pos.f][pos.s] == '>') {
-            ans++;
-            // printmap(v2);
-            // cout << "-----------------------\n";
-            shouldbreak = 1;
-          }
-          cnt[pos.f][pos.s] = '^';
-          pos.f--;
-        }
-        if (oob(pos.f, pos.s)) {
-          shouldbreak = 1;
-        }
-        dir = '>';
-        pos.f++;
-        break;
-      case '>':
-        while (!oob(pos.f, pos.s) and v2[pos.f][pos.s] != '#') {
-          if (!oob(pos.f, pos.s + 1) and v2[pos.f][pos.s + 1] == '#' and
-              cnt[pos.f][pos.s] == 'v') {
-            ans++;
-
-            // printmap(v2);
-            // cout << "-----------------------\n";
-            shouldbreak = 1;
-          }
-          cnt[pos.f][pos.s] = '>';
-          pos.s++;
-        }
-        if (oob(pos.f, pos.s)) {
-          shouldbreak = 1;
-        }
-        dir = 'v';
-        pos.s--;
-        break;
-      case 'v':
-        while (!oob(pos.f, pos.s) and v2[pos.f][pos.s] != '#') {
-          if (!oob(pos.f + 1, pos.s) and v2[pos.f + 1][pos.s] == '#' and
-              cnt[pos.f][pos.s] == '<') {
-            ans++;
-            shouldbreak = 1;
-            // printmap(v2);
-            // cout << "-----------------------\n";
-          }
-          cnt[pos.f][pos.s] = 'v';
-          pos.f++;
-        }
-        if (oob(pos.f, pos.s)) {
-          shouldbreak = 1;
-        }
-        dir = '<';
-        pos.f--;
-        break;
-      case '<':
-        while (!oob(pos.f, pos.s) and v2[pos.f][pos.s] != '#') {
-          if (!oob(pos.f, pos.s - 1) and v2[pos.f][pos.s - 1] == '#' and
-              cnt[pos.f][pos.s] == '^') {
-            ans++;
-            shouldbreak = 1;
-            // printmap(v2);
-            // cout << "-----------------------\n";
-          }
-          cnt[pos.f][pos.s] = '<';
-          pos.s--;
-        }
-        if (oob(pos.f, pos.s)) {
-          shouldbreak = 1;
-        }
-        pos.s++;
-        dir = '^';
-
-        break;
-      default:
-        cout << "should't be here" << endl;
-        exit(1);
-      }
+  for (int i = 0; i < n; i++) {
+    for (int j = 0; j < m; j++) {
+      if (mp(i, j) == initial_pos or v[i][j] == '#')
+        continue;
+      v[i][j] = '#';
+      pos = initial_pos;
+      dir = initial_dir;
+      ans += (int)has_cycle();
+      v[i][j] = '.';
     }
-    // printv(cnt);
-    v2[a][b] = '.';
   }
   cout << ans << endl;
   exit(0);
