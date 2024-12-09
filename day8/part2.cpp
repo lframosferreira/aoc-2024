@@ -67,21 +67,25 @@ int main() {
         ii pos1 = ve[i];
         ii pos2 = ve[j];
         int dx = abs(p1.f - p2.f);
-        pos1.f -= dx;
-        pos2.f += dx;
         int dy = abs(p1.s - p2.s);
-        if (pos1.s < pos2.s) {
-          pos1.s -= dy;
-          pos2.s += dy;
-        } else {
-          pos1.s += dy;
-          pos2.s -= dy;
-        }
-        if (!oob(pos1.f, pos1.s)) {
+        while (!oob(pos1.f, pos1.s)) {
           conjunto.insert(pos1);
+          pos1.f -= dx;
+          if (pos1.s < pos2.s) {
+            pos1.s -= dy;
+          } else {
+            pos1.s += dy;
+          }
         }
-        if (!oob(pos2.f, pos2.s))
+        while (!oob(pos2.f, pos2.s)) {
           conjunto.insert(pos2);
+          pos2.f += dx;
+          if (pos1.s < pos2.s) {
+            pos2.s += dy;
+          } else {
+            pos2.s -= dy;
+          }
+        }
       }
     }
   }
