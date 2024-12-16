@@ -57,14 +57,37 @@ inline int allht(const string &st) {
 set<ii> pos;
 
 bool ok_above(int x, int y) {
-
-  if (is_wall(x - 1, y))
+  if (is_wall(x, y)) {
     return false;
-  if (is_box(x - 1, y)) {
-    if (mapa[x - 1][y] == ']')
+  }
+  if (is_box(x, y)) {
+    if (mapa[x][y] == ']') {
+      pos.insert(mp(x, y));
+      pos.insert(mp(x, y - 1));
       return ok_above(x - 1, y) and ok_above(x - 1, y - 1);
-    else
+    } else {
+      pos.insert(mp(x, y));
+      pos.insert(mp(x, y + 1));
       return ok_above(x - 1, y) and ok_above(x - 1, y + 1);
+    }
+  }
+  return true;
+}
+
+bool ok_below(int x, int y) {
+  if (is_wall(x, y)) {
+    return false;
+  }
+  if (is_box(x, y)) {
+    if (mapa[x][y] == ']') {
+      pos.insert(mp(x, y));
+      pos.insert(mp(x, y - 1));
+      return ok_below(x + 1, y) and ok_below(x + 1, y - 1);
+    } else {
+      pos.insert(mp(x, y));
+      pos.insert(mp(x, y + 1));
+      return ok_below(x + 1, y) and ok_below(x + 1, y + 1);
+    }
   }
   return true;
 }
@@ -75,23 +98,33 @@ inline void printm() {
   cout << "------------------------------------------------" << endl;
 }
 
-void push_up(int x, int y) {
-  if (mapa[x - 1][y] == '[') {
-    push_up(x - 1, y);
-    push_up(x - 1, y + 1);
-  } else if (mapa[x - 1][y] == ']') {
-    push_up(x - 1, y);
-    push_up(x - 1, y - 1);
-  } else {
-    mapa[x - 1][y] = mapa[x][y];
+int rx, ry;
+
+void push_up() {
+  for (auto &[a, b] : pos) {
+    mapa[a - 1][b] = mapa[a][b];
+    mapa[a][b] = '.';
   }
+  mapa[rx][ry] = '.';
+  rx--;
+  mapa[rx][ry] = '@';
+}
+
+void push_down() {
+  for (auto it = pos.rbegin(); it != pos.rend(); it++) {
+    auto &[a, b] = *it;
+    mapa[a + 1][b] = mapa[a][b];
+    mapa[a][b] = '.';
+  }
+  mapa[rx][ry] = '.';
+  rx++;
+  mapa[rx][ry] = '@';
 }
 
 int main() {
   string input = "";
   string inp;
   int i = 0;
-  int rx, ry;
   while (cin >> inp) {
     for (auto &c : inp) {
       if (c == '@') {
@@ -115,29 +148,31 @@ int main() {
   }
   // empty line
   getline(cin, input);
+  n = sz(mapa);
   m = sz(mapa[0]);
   while (cin >> input)
     movement += input;
+  int contaa = 0;
   for (auto &c : movement) {
     int idx = -1;
     bool foundbox = false;
-    dbg(c);
-    printm();
-    if (c == 'v')
-      exit(0);
+    pos.clear();
+    // if (contaa++ > 250)
+    //   exit(0);
     switch (c) {
     case '^':
-      if (is_wall(rx - 1, ry))
-        break;
-      if (!is_box(rx - 1, ry)) {
+      if (mapa[rx - 1][ry] == ']') {
+        if (ok_above(rx - 1, ry) and ok_above(rx - 1, ry - 1)) {
+          push_up();
+        }
+      } else if (mapa[rx - 1][ry] == '[') {
+        if (ok_above(rx - 1, ry) and ok_above(rx - 1, ry + 1)) {
+          push_up();
+        }
+      } else if (mapa[rx - 1][ry] == '.') {
         mapa[rx][ry] = '.';
         rx--;
         mapa[rx][ry] = '@';
-        break;
-      }
-
-      if (ok_above(rx, ry)) {
-        push_up(rx, ry);
       }
 
       break;
@@ -172,28 +207,20 @@ int main() {
       }
       break;
     case 'v':
-      if (is_wall(rx + 1, ry))
-        break;
-      if (!is_box(rx + 1, ry)) {
-        mapa[rx][ry] = '.';
-        rx++;
-        mapa[rx][ry] = '@';
-        break;
-      }
-      for (int i = rx; i <= n - 2; i++) {
-        if (mapa[i][ry] == '#')
-          foundbox = true;
-        if (mapa[i][ry] == '.' and !foundbox) {
-          idx = i;
-          break;
+      if (mapa[rx + 1][ry] == ']') {
+        if (ok_below(rx + 1, ry) and ok_below(rx + 1, ry - 1)) {
+          push_down();
         }
-      }
-      if (idx != -1) {
-        mapa[idx][ry] = 'O';
+      } else if (mapa[rx + 1][ry] == '[') {
+        if (ok_below(rx + 1, ry) and ok_below(rx + 1, ry + 1)) {
+          push_down();
+        }
+      } else if (mapa[rx + 1][ry] == '.') {
         mapa[rx][ry] = '.';
         rx++;
         mapa[rx][ry] = '@';
       }
+
       break;
     case '<':
       if (is_wall(rx, ry - 1))
@@ -228,12 +255,16 @@ int main() {
     default:
       break;
     }
+    // dbg(c);
+    // printm();
   }
   ll ans = 0;
-  for (int i = 1; i <= n - 2; i++) {
-    for (int j = 1; j <= m - 2; j++) {
-      if (mapa[i][j] == 'O') {
-        ans += 100 * i + j;
+  printm();
+  for (int i = 0; i < n; i++) {
+    for (int j = 0; j < m; j++) {
+      if (mapa[i][j] == '[') {
+        int d1 = 100 * i + j;
+        ans += d1;
       }
     }
   }
