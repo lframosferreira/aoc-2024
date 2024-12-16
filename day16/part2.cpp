@@ -37,7 +37,7 @@ const int INF = 0x3f3f3f3f;
 const ll LINF = 0x3f3f3f3f3f3f3f3fll;
 
 vector<string> mapa;
-int n, m;
+int n, m, ri, rj, fi, fj;
 
 int oob(int x, int y) {
   return x < 1 or x >= n - 1 or y < 1 or y >= m - 1 or mapa[x][y] == '#';
@@ -54,10 +54,39 @@ typedef struct pqval {
   bool operator<(const pqval &other) const { return cost > other.cost; }
 } pqval;
 
+set<ii> seats;
+ii glob_dir = {0, 1};
+int dijkstra(ii start, ii end) {
+
+  priority_queue<pqval> pq;
+  pq.push({start.f, start.s, 0, glob_dir});
+  vvi vis(n, vi(m));
+
+  while (sz(pq)) {
+    auto [ni, nj, cost, dir, pi, pj] = pq.top();
+    pq.pop();
+    if (ni == end.f and nj == end.s) {
+      glob_dir = dir;
+      return cost;
+    }
+    if (vis[ni][nj])
+      continue;
+    vis[ni][nj] = 1;
+    for (auto &[di, dj] : moves) {
+      if (dir.f == di and dir.s == dj) {
+        if (!oob(ni + di, nj + dj))
+          pq.push({ni + di, nj + dj, cost + 1, dir});
+      } else {
+        if (!oob(ni + di, nj + dj))
+          pq.push({ni + di, nj + dj, cost + 1001, {di, dj}});
+      }
+    }
+  }
+  return -1;
+}
+
 int main() {
   string st;
-  int ri, rj;
-  int fi, fj;
   int i = 0;
   while (cin >> st) {
     mapa.pb(st);
@@ -73,49 +102,17 @@ int main() {
   }
   n = sz(mapa);
   m = sz(mapa[0]);
-  set<ii> seats;
-  priority_queue<pqval> pq;
-  pq.push({ri, rj, 0, {0, 1}, -1, -1});
-  vvi vis(n, vi(m));
-
-  vector<vector<ii>> par(n, vector<ii>(m, {-1, -1}));
-  ll ans = 0;
-  ll best = INF;
-  while (sz(pq)) {
-    auto [ni, nj, cost, dir, pi, pj] = pq.top();
-    pq.pop();
-    if (ni == fi and nj == fj) {
-      if (cost > best) {
-        break;
-      }
-      par[ni][nj] = {pi, pj};
-      best = min(cost, (int)best);
-      // for (auto &e : par) {
-      //   for (auto &[a, b] : e) {
-      //     cout << a << "," << b << " ";
-      //   }
-      //   cout << endl;
-      // }
-      while (ni != -1 and nj != -1) {
-        seats.insert({ni, nj});
-        int a = par[ni][nj].f;
-        int b = par[ni][nj].s;
-        ni = a;
-        nj = b;
-      }
-      continue;
-    }
-    if (vis[ni][nj])
-      continue;
-    par[ni][nj] = {pi, pj};
-    vis[ni][nj] = 1;
-    for (auto &[di, dj] : moves) {
-      if (dir.f == di and dir.s == dj) {
-        if (!oob(ni + di, nj + dj))
-          pq.push({ni + di, nj + dj, cost + 1, dir, ni, nj});
-      } else {
-        if (!oob(ni + di, nj + dj))
-          pq.push({ni + di, nj + dj, cost + 1001, {di, dj}, ni, nj});
+  int ans = 0;
+  for (int i = 0; i < n; i++) {
+    for (int j = 0; j < m; j++) {
+      if (mapa[i][j] == '.') {
+        glob_dir = {0, 1};
+        int v1 = dijkstra({ri, rj}, {i, j});
+        int v2 = dijkstra({i, j}, {fi, fj});
+        if (v1 + v2 == 130536) {
+          seats.insert({i, j});
+          ans++;
+        }
       }
     }
   }
@@ -128,6 +125,6 @@ int main() {
     }
     cout << endl;
   }
-  cout << sz(seats) + 1 << endl;
+  cout << ans + 2 << endl;
   exit(0);
 }
